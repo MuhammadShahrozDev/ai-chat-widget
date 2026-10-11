@@ -1,12 +1,8 @@
 """
-AI Chat Widget — FastAPI Backend
+AI Chat Widget — Flask Backend (PythonAnywhere Compatible)
 """
 
-from fastapi import FastAPI
-from fastapi.responses import FileResponse, StreamingResponse
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional
+from flask import Flask, request, Response, jsonify, send_from_directory
 import uuid
 import json
 import os
@@ -14,38 +10,40 @@ import os
 from chatbot import Chatbot
 from config import config
 
-app = FastAPI(title="AI Chat Widget", version="1.0.0")
+app = Flask(__name__)
 
-# CORS — allow any website to embed
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-# In-memory sessions (use Redis in production)
+@app.after_request
+def add_cors(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return response
+
+
 sessions = {}
 
 
-class ChatRequest(BaseModel):
-    message: str
-    session_id: Optional[str] = None
-
-
-@app.get("/")
+@app.route('/')
 def root():
-    return {
+    return jsonify({
         "status": "online",
         "service": "AI Chat Widget",
         "version": "1.0.0"
-    }
+    })
 
 
-@app.post("/api/chat/stream")
-async def chat_stream(req: ChatRequest):
-    session_id = req.session_id or str(uuid.uuid4())
+@app.route('/api/chat/stream', methods=['POST', 'OPTIONS'])
+def chat_stream():
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    data = request.get_json() or {}
+    message = data.get('message', '').strip()
+    session_id = data.get('session_id') or str(uuid.uuid4())
+    
+    if not message:
+        return jsonify({'error': 'Empty message'}), 400
     
     if session_id not in sessions:
         sessions[session_id] = Chatbot()
@@ -53,45 +51,36 @@ async def chat_stream(req: ChatRequest):
     bot = sessions[session_id]
     
     def generate():
-        # Send session ID first
         yield f"data: {json.dumps({'type': 'session', 'session_id': session_id})}\n\n"
         
         try:
-            for chunk in bot.stream_chat(req.message):
+            for chunk in bot.stream_chat(message):
                 yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
         
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
     
-    return StreamingResponse(
+    return Response(
         generate(),
-        media_type="text/event-stream",
+        mimetype='text/event-stream',
         headers={
-            "Cache-Control": "no-cache",
-            "X-Accel-Buffering": "no",
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no',
+            'Connection': 'keep-alive',
         }
     )
 
 
-@app.get("/widget.js")
+@app.route('/widget.js')
 def widget_js():
-    return FileResponse(
-        "widget/widget.js",
-        media_type="application/javascript",
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Cache-Control": "public, max-age=3600",
-        }
-    )
+    return send_from_directory('widget', 'widget.js', mimetype='application/javascript')
 
 
-@app.get("/demo")
+@app.route('/demo')
 def demo():
-    return FileResponse("widget/demo.html", media_type="text/html")
+    return send_from_directory('widget', 'demo.html', mimetype='text/html')
 
 
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+if __name__ == '__main__':
+    app.run(debug=True, port=8000)

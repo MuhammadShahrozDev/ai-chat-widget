@@ -1,5 +1,5 @@
-fastapi
-uvicorn[standard]
 groq
 python-dotenv
-pydantic
+flask
+groq
+python-dotenv
