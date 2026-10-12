@@ -1,5 +1,5 @@
 """
-AI Chat Widget — Flask Backend
+AI Chat Widget — Flask Backend (Multi-Brand)
 """
 
 from flask import Flask, request, Response, jsonify, send_from_directory
@@ -20,15 +20,17 @@ def add_cors(response):
     return response
 
 
-sessions = {}
+# sessions[brand][session_id] = Chatbot instance
+sessions = {"techxaone": {}, "edulearn": {}}
 
 
 @app.route('/')
 def root():
     return jsonify({
         "status": "online",
-        "service": "Techxaone AI Chat Widget",
-        "version": "2.0.0"
+        "service": "AI Chat Widget",
+        "version": "3.0.0",
+        "brands": ["techxaone", "edulearn"]
     })
 
 
@@ -40,14 +42,18 @@ def chat_stream():
     data = request.get_json() or {}
     message = data.get('message', '').strip()
     session_id = data.get('session_id') or str(uuid.uuid4())
+    brand = (data.get('brand') or 'techxaone').lower()
+    
+    if brand not in sessions:
+        brand = 'techxaone'
     
     if not message:
         return jsonify({'error': 'Empty message'}), 400
     
-    if session_id not in sessions:
-        sessions[session_id] = Chatbot()
+    if session_id not in sessions[brand]:
+        sessions[brand][session_id] = Chatbot(brand=brand)
     
-    bot = sessions[session_id]
+    bot = sessions[brand][session_id]
     
     def generate():
         yield f"data: {json.dumps({'type': 'session', 'session_id': session_id})}\n\n"
@@ -77,6 +83,11 @@ def widget_js():
 @app.route('/demo')
 def demo():
     return send_from_directory('widget', 'demo.html', mimetype='text/html')
+
+
+@app.route('/demo-edulearn')
+def demo_edulearn():
+    return send_from_directory('widget', 'demo-edulearn.html', mimetype='text/html')
 
 
 if __name__ == '__main__':

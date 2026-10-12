@@ -1,6 +1,6 @@
 /**
- * AI Chat Widget v2.2 — Techxaone
- * Auto language detection, no dropdown
+ * AI Chat Widget v2.2 — Multi-Brand
+ * Supports Techxaone + EduLearn Academy
  */
 
 (function() {
@@ -10,15 +10,17 @@
     const API_URL = window.AI_CHAT_API 
         || (script ? new URL(script.src).origin : 'http://localhost:8000');
     
-    const CONFIG = {
-        title: window.AI_CHAT_TITLE || 'Techxaone Support',
-        greeting: window.AI_CHAT_GREETING || 'Hi! 👋 How may I help you today?',
-        color: window.AI_CHAT_COLOR || '#0d9488',
-        accent: window.AI_CHAT_ACCENT || '#f59e0b',
-        botName: window.AI_CHAT_BOT_NAME || 'Techxaone',
-        voiceEnabled: window.AI_CHAT_VOICE !== false,
-        defaultLang: window.AI_CHAT_LANG || 'en-US',
-    };
+   const CONFIG = {
+    title: window.AI_CHAT_TITLE || 'Support',
+    greeting: window.AI_CHAT_GREETING || 'Hi! 👋 How may I help you?',
+    color: window.AI_CHAT_COLOR || '#0d9488',
+    colorDark: window.AI_CHAT_COLOR_DARK || '#0f766e',
+    accent: window.AI_CHAT_ACCENT || '#f59e0b',
+    botName: window.AI_CHAT_BOT_NAME || 'Support',
+    voiceEnabled: window.AI_CHAT_VOICE !== false,
+    defaultLang: window.AI_CHAT_LANG || 'en-US',
+    brand: window.AI_CHAT_BRAND || 'techxaone',
+};
     
     // ============ CREATE HOST ============
     const host = document.createElement('div');
@@ -43,7 +45,7 @@
         .aichat-toggle {
             width: 60px; height: 60px;
             border-radius: 50%;
-            background: linear-gradient(135deg, ${CONFIG.color}, #0f766e);
+            background: linear-gradient(135deg, ${CONFIG.color}, ${CONFIG.colorDark});
             color: white;
             border: none; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
@@ -88,7 +90,7 @@
         }
         
         .aichat-header {
-            background: linear-gradient(135deg, ${CONFIG.color}, #0f766e);
+            background: linear-gradient(135deg, ${CONFIG.color}, ${CONFIG.colorDark});
             color: white; padding: 16px 20px;
             display: flex; align-items: center; gap: 12px;
             flex-shrink: 0;
@@ -142,7 +144,7 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.04);
         }
         .aichat-msg-user .aichat-bubble {
-            background: linear-gradient(135deg, ${CONFIG.color}, #0f766e);
+            background: linear-gradient(135deg, ${CONFIG.color}, ${CONFIG.colorDark});
             color: white; border-bottom-right-radius: 4px;
             box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3);
         }
@@ -309,7 +311,6 @@
     let recognition = null;
     let isListening = false;
     let lastDetectedLang = CONFIG.defaultLang;
-    
     let currentSpeakBtn = null;
     let currentUtterance = null;
     let isPaused = false;
@@ -317,50 +318,22 @@
     // ============ LANGUAGE AUTO-DETECTION ============
     function detectLanguage(text) {
         if (!text) return 'en-US';
-        
-        // Arabic / Urdu range
-        if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(text)) {
-            return 'ur-PK';
-        }
-        // Devanagari (Hindi)
-        if (/[\u0900-\u097F]/.test(text)) {
-            return 'hi-IN';
-        }
-        // Chinese
-        if (/[\u4E00-\u9FFF]/.test(text)) {
-            return 'zh-CN';
-        }
-        // Japanese
-        if (/[\u3040-\u309F\u30A0-\u30FF]/.test(text)) {
-            return 'ja-JP';
-        }
-        // Korean
-        if (/[\uAC00-\uD7AF]/.test(text)) {
-            return 'ko-KR';
-        }
-        // Russian / Cyrillic
-        if (/[\u0400-\u04FF]/.test(text)) {
-            return 'ru-RU';
-        }
-        // Spanish
-        if (/[áéíóúñ¿¡]/i.test(text)) {
-            return 'es-ES';
-        }
-        // French
-        if (/[àâçéèêëîïôûùüÿœ]/i.test(text)) {
-            return 'fr-FR';
-        }
-        // Default: English
+        if (/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(text)) return 'ur-PK';
+        if (/[\u0900-\u097F]/.test(text)) return 'hi-IN';
+        if (/[\u4E00-\u9FFF]/.test(text)) return 'zh-CN';
+        if (/[\u3040-\u309F\u30A0-\u30FF]/.test(text)) return 'ja-JP';
+        if (/[\uAC00-\uD7AF]/.test(text)) return 'ko-KR';
+        if (/[\u0400-\u04FF]/.test(text)) return 'ru-RU';
+        if (/[áéíóúñ¿¡]/i.test(text)) return 'es-ES';
+        if (/[àâçéèêëîïôûùüÿœ]/i.test(text)) return 'fr-FR';
         return 'en-US';
     }
     
-    // ============ VOICE ICONS ============
     const ICONS = {
         speaker: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`,
         pause: `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>`,
         play: `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>`
     };
-    
     const LABELS = { speaker: 'Listen', pause: 'Pause', play: 'Resume' };
     
     function updateSpeakBtn(btn, state) {
@@ -371,15 +344,10 @@
         if (state === 'play') btn.classList.add('aichat-paused');
         btn.title = LABELS[state];
     }
+    function resetSpeakBtn(btn) { if (btn) updateSpeakBtn(btn, 'speaker'); }
     
-    function resetSpeakBtn(btn) {
-        if (!btn) return;
-        updateSpeakBtn(btn, 'speaker');
-    }
-    
-    // ============ VOICES LOADING ============
+    // ============ VOICES ============
     let voicesCache = [];
-    
     function loadVoices() {
         return new Promise((resolve) => {
             if (typeof window.speechSynthesis === 'undefined') { resolve([]); return; }
@@ -402,15 +370,12 @@
     function findVoice(voices, lang) {
         const code = lang.split('-')[0].toLowerCase();
         const full = lang.toLowerCase().replace('_', '-');
-        
         let v = voices.find(x => x.lang.toLowerCase() === full);
         if (v) return v;
         v = voices.find(x => x.lang.toLowerCase().startsWith(code + '-'));
         if (v) return v;
         v = voices.find(x => x.lang.toLowerCase().startsWith(code));
         if (v) return v;
-        
-        // Fallbacks
         if (code === 'ur') {
             v = voices.find(x => x.lang.toLowerCase().startsWith('hi'));
             if (v) return v;
@@ -422,14 +387,12 @@
         return null;
     }
     
-    // ============ SPEAK WITH PAUSE/RESUME ============
+    // ============ SPEAK ============
     async function speak(text, btn) {
         if (!('speechSynthesis' in window)) {
-            alert('Voice output is not supported on this browser.');
+            alert('Voice output not supported on this browser.');
             return;
         }
-        
-        // Same button → pause/resume/stop
         if (currentSpeakBtn === btn) {
             if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
                 window.speechSynthesis.pause();
@@ -450,38 +413,27 @@
             isPaused = false;
             return;
         }
-        
-        // Different button → stop old, start new
         if (currentSpeakBtn) {
             window.speechSynthesis.cancel();
             resetSpeakBtn(currentSpeakBtn);
         }
-        
         currentSpeakBtn = btn;
         isPaused = false;
-        
         const voices = voicesCache.length ? voicesCache : await loadVoices();
-        
-        // Auto-detect language from text
         const detectedLang = detectLanguage(text);
         lastDetectedLang = detectedLang;
-        
-        // Clean text
         const cleanText = text
             .replace(/\*\*/g, '')
             .replace(/#{1,6}\s/g, '')
             .replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
             .trim();
-        
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.lang = detectedLang;
         utterance.rate = 0.95;
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
-        
         const voice = findVoice(voices, detectedLang);
         if (voice) utterance.voice = voice;
-        
         utterance.onend = () => {
             if (currentSpeakBtn === btn) {
                 resetSpeakBtn(btn);
@@ -490,7 +442,6 @@
                 isPaused = false;
             }
         };
-        
         utterance.onerror = (e) => {
             console.warn('Speech error:', e);
             if (currentSpeakBtn === btn) {
@@ -500,48 +451,34 @@
                 isPaused = false;
             }
         };
-        
         currentUtterance = utterance;
         updateSpeakBtn(btn, 'pause');
-        
-        setTimeout(() => {
-            window.speechSynthesis.speak(utterance);
-        }, 100);
+        setTimeout(() => window.speechSynthesis.speak(utterance), 100);
     }
     
     // ============ SPEECH RECOGNITION ============
     function initRecognition() {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) return null;
-        
         const rec = new SR();
         rec.continuous = false;
         rec.interimResults = false;
-        // Use last detected language from conversation
         rec.lang = lastDetectedLang || CONFIG.defaultLang;
-        
-        rec.onstart = () => {
-            isListening = true;
-            if (micBtn) micBtn.classList.add('aichat-listening');
-        };
-        
+        rec.onstart = () => { isListening = true; if (micBtn) micBtn.classList.add('aichat-listening'); };
         rec.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
             input.value = transcript;
             sendMessage(transcript);
         };
-        
         rec.onerror = (event) => {
             console.warn('Recognition error:', event.error);
             isListening = false;
             if (micBtn) micBtn.classList.remove('aichat-listening');
         };
-        
         rec.onend = () => {
             isListening = false;
             if (micBtn) micBtn.classList.remove('aichat-listening');
         };
-        
         return rec;
     }
     
@@ -549,12 +486,10 @@
     function addMessage(role, text, options = {}) {
         const msg = document.createElement('div');
         msg.className = 'aichat-msg aichat-msg-' + role;
-        
         const bubble = document.createElement('div');
         bubble.className = 'aichat-bubble';
         bubble.textContent = text;
         msg.appendChild(bubble);
-        
         if (role === 'bot' && 'speechSynthesis' in window && !options.skipSpeak) {
             const speakBtn = document.createElement('button');
             speakBtn.className = 'aichat-speak-btn';
@@ -562,7 +497,6 @@
             speakBtn.addEventListener('click', () => speak(text, speakBtn));
             bubble.appendChild(speakBtn);
         }
-        
         messages.appendChild(msg);
         messages.scrollTop = messages.scrollHeight;
         return { bubble, messageEl: msg };
@@ -581,11 +515,7 @@
     async function sendMessage(text) {
         text = (text || '').trim();
         if (!text || isTyping) return;
-        
-        // Detect language from user input
         lastDetectedLang = detectLanguage(text);
-        
-        // Stop ongoing speech
         if (window.speechSynthesis && window.speechSynthesis.speaking) {
             window.speechSynthesis.cancel();
             if (currentSpeakBtn) resetSpeakBtn(currentSpeakBtn);
@@ -593,24 +523,24 @@
             currentUtterance = null;
             isPaused = false;
         }
-        
         addMessage('user', text);
         input.value = '';
         input.style.height = 'auto';
         isTyping = true;
         sendBtn.disabled = true;
-        
         const typingEl = showTyping();
         
         try {
             const res = await fetch(API_URL + '/api/chat/stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text, session_id: sessionId })
+                body: JSON.stringify({
+                    message: text,
+                    session_id: sessionId,
+                    brand: CONFIG.brand
+                })
             });
-            
             if (!res.ok) throw new Error('HTTP ' + res.status);
-            
             const reader = res.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
@@ -620,18 +550,13 @@
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-                
                 buffer += decoder.decode(value, { stream: true });
                 const events = buffer.split('\n\n');
                 buffer = events.pop();
-                
                 for (const evt of events) {
                     if (!evt.startsWith('data: ')) continue;
-                    
                     let data;
-                    try { data = JSON.parse(evt.slice(6)); }
-                    catch (e) { continue; }
-                    
+                    try { data = JSON.parse(evt.slice(6)); } catch (e) { continue; }
                     if (data.type === 'session') sessionId = data.session_id;
                     else if (data.type === 'chunk') {
                         if (!botBubble) {
@@ -670,7 +595,6 @@
     toggle.addEventListener('click', () => {
         isOpen = !isOpen;
         root.classList.toggle('aichat-open', isOpen);
-        
         if (isOpen) {
             if (!hasGreeted) {
                 hasGreeted = true;
@@ -680,19 +604,17 @@
         }
     });
     
-    // ============ INPUT HANDLERS ============
+    // ============ INPUT ============
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage(input.value);
         }
     });
-    
     input.addEventListener('input', () => {
         input.style.height = 'auto';
         input.style.height = Math.min(input.scrollHeight, 100) + 'px';
     });
-    
     sendBtn.addEventListener('click', () => sendMessage(input.value));
     
     // ============ MIC ============
@@ -702,17 +624,12 @@
                 if (recognition) recognition.stop();
                 return;
             }
-            
             if (!recognition) recognition = initRecognition();
-            
             if (!recognition) {
-                alert('Voice input is not supported on this browser. Please use Chrome, Edge, or Safari.');
+                alert('Voice input not supported. Please use Chrome, Edge, or Safari.');
                 return;
             }
-            
-            // Use last detected language
             recognition.lang = lastDetectedLang || CONFIG.defaultLang;
-            
             try { recognition.start(); } catch (e) {}
         });
     }
@@ -720,7 +637,7 @@
     // ============ PRELOAD VOICES ============
     if ('speechSynthesis' in window) loadVoices();
     
-    // ============ ESC TO CLOSE ============
+    // ============ ESC ============
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && isOpen) toggle.click();
     });
