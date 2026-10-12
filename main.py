@@ -1,11 +1,10 @@
 """
-AI Chat Widget — Flask Backend (PythonAnywhere Compatible)
+AI Chat Widget — Flask Backend
 """
 
 from flask import Flask, request, Response, jsonify, send_from_directory
 import uuid
 import json
-import os
 
 from chatbot import Chatbot
 from config import config
@@ -28,8 +27,8 @@ sessions = {}
 def root():
     return jsonify({
         "status": "online",
-        "service": "AI Chat Widget",
-        "version": "1.0.0"
+        "service": "Techxaone AI Chat Widget",
+        "version": "2.0.0"
     })
 
 
@@ -52,13 +51,11 @@ def chat_stream():
     
     def generate():
         yield f"data: {json.dumps({'type': 'session', 'session_id': session_id})}\n\n"
-        
         try:
             for chunk in bot.stream_chat(message):
                 yield f"data: {json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
-        
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
     
     return Response(
